@@ -22,6 +22,5 @@ namespace ecs {
 	}
 
 	struct Component {
-
 	};
 }
