@@ -1,4 +1,3 @@
-#include <iostream>
 #include "Manager.h"
 
 struct Test1 : ecs::Component {
@@ -93,7 +92,4 @@ void main()
 	manager.UpdateEntities(1);
 	manager.destroyEntity(entity);
 	manager.UpdateEntities(1);
-
-	int a;
-	std::cin >> a;
 }
