@@ -1,5 +1,5 @@
 #include "Include/System.h"
-#include "Manager.h"
+#include "Include/Manager.h"
 
 ecs::System::System(Manager& manager) 
 :	manager(manager) 
