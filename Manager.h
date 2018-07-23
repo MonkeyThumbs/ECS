@@ -4,7 +4,6 @@
 #include "Entity.h"
 #include "Component.h"
 #include "ComponentStorage.h"
-#include "Event.h"
 #include "System.h"
 #include "Registry.h"
 
@@ -117,48 +116,6 @@ namespace ecs {
 			return getComponentStore<C>().remove(entity);
 		}
 
-		template <typename E>
-		inline void injectEvent(Event::Ptr ptr) {
-			static_assert(std::is_base_of<Event, E>::value, "E must inherit from Event\n");
-			std::unordered_map<EventType, std::vector<Event::Ptr>>::iterator it = m_events.find(getEventTypeID<E>());
-			if (it == m_events.end()) {
-				std::vector<Event::Ptr> tmp;
-				tmp.push_back(std::move(ptr));
-				m_events.insert(getEventTypeID<E>(), std::move(tmp));
-			}
-			else {
-				(*it).second.push_back(std::move(ptr));
-			}
-		}
-
-		template <typename E>
-		inline const Event::Ptr peekEvent() const {
-			static_assert(std::is_base_of<Event, E>::value, "E must inherit from Event\n");
-			std::unordered_map<EventType, std::vector<Event::Ptr>>::iterator it = m_events.find(getEventTypeID<E>());
-			if (it != m_events.end()) {
-				if ((*it).second.empty())
-					return nullptr;
-				tmp = (*it).second.at(0);
-			}
-			return nullptr;
-		}
-
-		template <typename E>
-		inline const Event::Ptr extractEvent() const {
-			static_assert(std::is_base_of<Event, E>::value, "E must inherit from Event\n");
-			std::unordered_map<EventType, std::vector<Event::Ptr>>::iterator it = m_events.find(getEventTypeID<E>());
-			if (it != m_events.end()) {
-				if ((*it).second.empty()) {
-					m_events.erase(it);
-					return nullptr;
-				}
-				tmp = (*it).second.at(0);
-				(*it).second.pop_back();
-				return tmp;
-			}
-			return nullptr;
-		}
-
 		size_t registerEntity(const Entity::Handle& entity);
 		size_t unregisterEntity(const Entity::Handle& entity);
 		size_t UpdateEntities(const float& dt);
@@ -172,13 +129,12 @@ namespace ecs {
 
 
 	private:
-		std::bitset<Entity::MAX_ENTITIES>							m_live;
+		std::bitset<Entity::MAX_ENTITIES>					m_live;
 		std::array<Entity::Handle, Entity::MAX_ENTITIES>			m_entityIDs;
 		std::array<Entity::Keybits, Entity::MAX_ENTITIES>			m_entityKeybits;
-		std::unordered_map<ComponentType, IComponentStore::Ptr>		m_componentStores;
-		std::vector<System::Ptr>									m_systems;
-		std::unordered_map<std::string, System*>					m_systemToNameMap;
-		std::unordered_map<EventType, std::vector<Event::Ptr>>		m_events;
-		std::unordered_map<std::string, Registry>					m_registries;
+		std::unordered_map<ComponentType, IComponentStore::Ptr>			m_componentStores;
+		std::vector<System::Ptr>						m_systems;
+		std::unordered_map<std::string, System*>				m_systemToNameMap;
+		std::unordered_map<std::string, Registry>				m_registries;
 	};
 }
