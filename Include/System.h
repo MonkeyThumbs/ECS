@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 #include "Entity.h"
+#include "Event.h"
 
 
 namespace ecs {
@@ -39,8 +40,18 @@ namespace ecs {
 		inline bool hasEntity(Entity::Handle entity) {
 			return (m_matchingEntities.end() != m_matchingEntities.find(entity));
 		}
+		inline void listenEvent(EventType type) {
+			m_signature.set(type, true);
+		}
+		inline void ignoreEvent(EventType type) {
+			m_signature.set(type, false);
+		}
+		inline bool isListening(EventType type) {
+			return m_signature.test(type);
+		}
 
 		std::size_t UpdateEntities(const float& dt);
+		virtual void HandleEvent(Event::Ptr ptr) {}
 
 	protected:
 		virtual void BeginUpdate() {}
@@ -53,12 +64,14 @@ namespace ecs {
 		inline void setLockbits(Entity::Lockbits&& lockbits) {
 			m_lockbits = std::move(lockbits);
 		}
+		inline void setSignature(Event::Signature&& signature) {
+			m_signature = std::move(signature);
+		}
 
-
-		Manager&	manager;
+		Manager&			manager;
 		std::set<Entity::Handle>	m_matchingEntities;
 
 	private:
 		Entity::Lockbits			m_lockbits;
+		Event::Signature			m_signature;
 	};
-}

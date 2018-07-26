@@ -2,6 +2,7 @@
 #include <array>
 #include <vector>
 #include "Entity.h"
+#include "Event.h"
 #include "Component.h"
 #include "ComponentStorage.h"
 #include "System.h"
@@ -73,16 +74,16 @@ namespace ecs {
 			return m_live.test(entity);
 		}
 
-		// Moves component to storage
-		// Returns true if component is added
-		//
-		// Throws std::runtime_error if entity is
-		// to be removed
-		//
-		// Usage: addComponent<ComponentType>(const unsigned int&, ComponentType)
-		// 
-		// Does not associate entity 
-		// with any systems
+		/// Moves component to storage
+		/// Returns true if component is added
+		///
+		/// Throws std::runtime_error if entity is
+		/// to be removed
+		///
+		/// Usage: addComponent<ComponentType>(const unsigned int&, std::move(Component))
+		/// 
+		/// Does not associate entity 
+		/// with any systems
 		template<typename C>
 		inline bool addComponent(const Entity::Handle& entity, C&& component) {
 			static_assert(std::is_base_of<Component, C>::value, "C must inherit from Component\n");
@@ -92,19 +93,19 @@ namespace ecs {
 			return getComponentStore<C>().add(entity, std::move(component));
 		}
 		
-		// Removes component type from storage
-		// Returns true if component is removed
-		//
-		// Throws std::exception if entity is
-		// to be removed
-		// 
-		// Usage: removeComponent<ComponentType>(const int&)
-		//
-		// Does not remove entity's 
-		// association with any systems
-		// 
-		// ** Warning: unregister/re-register
-		// entity to avoid crashes
+		/// Removes component type from storage
+		/// Returns true if component is removed
+		///
+		/// Throws std::exception if entity is
+		/// to be removed
+		/// 
+		/// Usage: removeComponent<ComponentType>(const int&)
+		///
+		/// Does not remove entity's 
+		/// association with any systems
+		/// 
+		/// ** Warning: unregister/re-register
+		/// entity to avoid crashes
 		template<typename C>
 		inline bool removeComponent(const Entity::Handle& entity) {
 			static_assert(std::is_base_of<Component, C>::value, "C must inherit from Component\n");
@@ -114,6 +115,60 @@ namespace ecs {
 			}
 			m_entityKeybits[entity].set(getComponentTypeID<C>(), false);
 			return getComponentStore<C>().remove(entity);
+		}
+		
+		/// Moves event to storage
+		/// Returns true if event is added
+		///
+		/// Usage: injectEvent<EventType>(std::move(Event))
+		template <typename E>
+		inline void injectEvent(Event::Ptr ptr) {
+			static_assert(std::is_base_of<Event, E>::value, "E must inherit from Event\n");
+			std::unordered_map<EventType, std::vector<Event::Ptr>>::iterator it = m_events.find(getEventTypeID<E>());
+			if (it == m_events.end()) {
+				std::vector<Event::Ptr> tmp;
+				tmp.push_back(std::move(ptr));
+				m_events.insert(getEventTypeID<E>(), std::move(tmp));
+			}
+			else {
+				(*it).second.push_back(std::move(ptr));
+			}
+		}
+
+		/// Returns const Event::Ptr at the top of the vector
+		/// without removing it
+		///
+		/// Usage: Event & event = peekEvent<EventType>()
+		template <typename E>
+		inline const Event::Ptr peekEvent() const {
+			static_assert(std::is_base_of<Event, E>::value, "E must inherit from Event\n");
+			std::unordered_map<EventType, std::vector<Event::Ptr>>::iterator it = m_events.find(getEventTypeID<E>());
+			if (it != m_events.end()) {
+				if ((*it).second.empty())
+					return nullptr;
+				tmp = (*it).second.at(0);
+			}
+			return tmp;
+		}
+
+		/// Returns const Event::Ptr at the top of the vector
+		/// and removes it
+		///
+		/// Usage: Event & event = peekEvent<EventType>()
+		template <typename E>
+		inline const Event::Ptr extractEvent() const {
+			static_assert(std::is_base_of<Event, E>::value, "E must inherit from Event\n");
+			std::unordered_map<EventType, std::vector<Event::Ptr>>::iterator it = m_events.find(getEventTypeID<E>());
+			if (it != m_events.end()) {
+				if ((*it).second.empty()) {
+					m_events.erase(it);
+					return nullptr;
+				}
+				tmp = (*it).second.at(0);
+				(*it).second.pop_back();
+				return tmp;
+			}
+			return nullptr;
 		}
 
 		size_t registerEntity(const Entity::Handle& entity);
@@ -129,12 +184,13 @@ namespace ecs {
 
 
 	private:
-		std::bitset<Entity::MAX_ENTITIES>					m_live;
-		std::array<Entity::Handle, Entity::MAX_ENTITIES>			m_entityIDs;
-		std::array<Entity::Keybits, Entity::MAX_ENTITIES>			m_entityKeybits;
-		std::unordered_map<ComponentType, IComponentStore::Ptr>			m_componentStores;
-		std::vector<System::Ptr>						m_systems;
-		std::unordered_map<std::string, System*>				m_systemToNameMap;
-		std::unordered_map<std::string, Registry>				m_registries;
+		std::bitset<Entity::MAX_ENTITIES>				m_live;
+		std::array<Entity::Handle, Entity::MAX_ENTITIES>		m_entityIDs;
+		std::array<Entity::Keybits, Entity::MAX_ENTITIES>		m_entityKeybits;
+		std::unordered_map<ComponentType, IComponentStore::Ptr>		m_componentStores;
+		std::vector<System::Ptr>					m_systems;
+		std::unordered_map<std::string, System*>			m_systemToNameMap;
+		std::unordered_map<EventType, std::vector<Event::Ptr>>		m_events;
+		std::unordered_map<std::string, Registry>			m_registries;
 	};
 }

@@ -58,6 +58,12 @@ size_t ecs::Manager::UpdateEntities(const float& dt) {
 		}
 	for (auto& system : m_systems) 
 		updatedEntities += system->UpdateEntities(dt);
+	for (auto& v : m_events) 
+		for (auto& e : v.second)
+			for (auto& system : m_systems)
+				if (system->isListening(e->tag))
+					system.get()->HandleEvent(e);
+	m_events.clear();
 	return updatedEntities;
 }
 
