@@ -1,4 +1,4 @@
-# ECS 1.1
+# ECS 1.0
 A light weight entity component system written in C++
 
 <h2>What is an Entity Component System</h2>
